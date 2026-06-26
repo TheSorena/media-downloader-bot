@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: media-downloader-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: DOWNLOAD_DIR
+        value: /tmp/downloads
+      - key: NODE_ENV
+        value: production
+      - key: COBALT_API_URL
+        value: http://localhost:9000

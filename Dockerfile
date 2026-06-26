@@ -12,6 +12,7 @@ RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir yt-dlp
 
 ENV PATH="/opt/venv/bin:$PATH"
+ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -25,5 +26,7 @@ COPY src/ ./src/
 RUN npm run build
 
 RUN mkdir -p /tmp/downloads
+
+EXPOSE 3000
 
 CMD ["node", "dist/index.js"]
