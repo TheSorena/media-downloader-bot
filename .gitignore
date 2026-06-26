@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+*.log
+*.err
+downloads/
+/tmp/downloads/
+cobalt/
+start-bot.ps1
+start-cobalt.ps1

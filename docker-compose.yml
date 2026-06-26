@@ -1,0 +1,59 @@
+services:
+  telegram-api:
+    image: aiogram/telegram-bot-api:latest
+    environment:
+      TELEGRAM_API_ID: "${TELEGRAM_API_ID}"
+      TELEGRAM_API_HASH: "${TELEGRAM_API_HASH}"
+      TELEGRAM_BOT_TOKEN: "${BOT_TOKEN}"
+      TELEGRAM_LOCAL: "true"
+    volumes:
+      - telegram-api-data:/var/lib/telegram-bot-api
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    depends_on:
+      telegram-api:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    environment:
+      BOT_TOKEN: "${BOT_TOKEN}"
+      ADMIN_IDS: "${ADMIN_IDS}"
+      BOT_API_URL: "http://telegram-api:8081"
+      BOT_API_DATA_DIR: "/var/lib/telegram-bot-api"
+      MONGODB_URI: "mongodb://mongo:27017/media_downloader"
+      FREE_DAILY_QUOTA_MB: "${FREE_DAILY_QUOTA_MB:-5120}"
+      FREE_MAX_FILE_MB: "${FREE_MAX_FILE_MB:-2048}"
+      PREMIUM_MAX_FILE_MB: "${PREMIUM_MAX_FILE_MB:-2000}"
+      DOWNLOAD_DIR: "/tmp/downloads"
+      NODE_ENV: "production"
+    volumes:
+      - telegram-api-data:/var/lib/telegram-bot-api:ro
+      - downloads:/tmp/downloads
+    restart: unless-stopped
+
+volumes:
+  telegram-api-data:
+  mongo-data:
+  downloads:
