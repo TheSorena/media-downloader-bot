@@ -64,8 +64,8 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
       '--dump-json',
       '--no-playlist',
       '--no-warnings',
-      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-      '--extractor-args', 'youtube:player_client=web_creator,mweb',
+      '--user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+      '--extractor-args', 'youtube:player_client=ios',
       url,
     ];
 
@@ -160,8 +160,8 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
     '--no-playlist',
     '--no-warnings',
     '--no-check-certificates',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-    '--extractor-args', 'youtube:player_client=web_creator,mweb',
+    '--user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+    '--extractor-args', 'youtube:player_client=ios',
     '--newline',
     '--progress',
     '--progress-template', '%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s',
@@ -266,10 +266,10 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
 }
 
 function extractError(stderr: string): string {
-  if (/Private video|Sign in|login/i.test(stderr)) return 'این ویدیو خصوصی است یا نیاز به ورود دارد.';
+  if (/Private video|Sign in|login/i.test(stderr)) return 'این محتوا نیاز به ورود دارد. لطفاً از لینک‌های عمومی استفاده کنید.';
   if (/Video unavailable|removed/i.test(stderr)) return 'این ویدیو حذف شده یا در دسترس نیست.';
   if (/HTTP Error 429|Too Many Requests/i.test(stderr)) return 'درخواست‌های زیادی ارسال شده. بعداً تلاش کنید.';
-  if (/Unsupported URL/i.test(stderr)) return 'این نوع محتوا پشتیبانی نمی‌شه (مثلاً عکس TikTok). فقط ویدیو پشتیبانی می‌شه.';
+  if (/Unsupported URL/i.test(stderr)) return 'این لینک پشتیبانی نمی‌شه. لطفاً از TikTok یا SoundCloud استفاده کنید.';
   if (/No video could be found/i.test(stderr)) return 'ویدیویی در این لینک پیدا نشد.';
   if (/ffmpeg not found/i.test(stderr)) return 'ابزار ffmpeg یافت نشد. با ادمین تماس بگیرید.';
   return 'خطا در دانلود. لطفاً دوباره تلاش کنید.';
