@@ -8,10 +8,13 @@ export interface CobaltOptions {
 }
 
 export interface CobaltResult {
-  status: 'tunnel' | 'redirect' | 'picker' | 'error';
+  status: 'tunnel' | 'redirect' | 'picker' | 'local-processing' | 'error';
   url?: string;
   filename?: string;
   picker?: { type: string; url: string }[];
+  tunnels?: string[];
+  outputType?: string;
+  outputFilename?: string;
   error?: string;
 }
 
@@ -21,11 +24,19 @@ export async function cobaltDownload(opts: CobaltOptions): Promise<CobaltResult>
   const body: Record<string, any> = {
     url,
     downloadMode: audioOnly ? 'audio' : 'auto',
-    videoQuality: videoQuality.replace('p', ''),
     audioFormat: 'mp3',
     audioBitrate: '128',
     filenameStyle: 'pretty',
   };
+
+  if (!audioOnly) {
+    const cleanQuality = videoQuality.replace('p', '');
+    if (['max', '4320', '2160', '1440', '1080', '720', '480', '360', '240', '144'].includes(cleanQuality)) {
+      body.videoQuality = cleanQuality;
+    } else {
+      body.videoQuality = '1080';
+    }
+  }
 
   logger.info('cobalt request', { url, quality: videoQuality, audioOnly });
 
@@ -67,6 +78,15 @@ export async function cobaltDownload(opts: CobaltOptions): Promise<CobaltResult>
     };
   }
 
+  if (data.status === 'local-processing') {
+    return {
+      status: 'local-processing',
+      tunnels: data.tunnel || [],
+      outputType: data.output?.type,
+      outputFilename: data.output?.filename,
+    };
+  }
+
   return { status: 'error', error: 'unexpected_response' };
 }
 
@@ -83,6 +103,12 @@ export async function cobaltDownloadFile(opts: CobaltOptions, destPath: string):
   if (result.status === 'picker' && result.picker && result.picker.length > 0) {
     const video = result.picker.find((p) => p.type === 'video') || result.picker[0];
     downloadUrl = video.url;
+    filename = 'picker_download.mp4';
+  }
+
+  if (result.status === 'local-processing' && result.tunnels && result.tunnels.length > 0) {
+    downloadUrl = result.tunnels[0];
+    filename = result.outputFilename || 'download.mp4';
   }
 
   if (!downloadUrl) {

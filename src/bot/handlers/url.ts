@@ -12,7 +12,7 @@ import { Download } from '../../models/Download.js';
 import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
-const COBALT_PLATFORMS = ['youtube', 'instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch'];
+const COBALT_PLATFORMS = ['youtube', 'instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch', 'soundcloud'];
 export const activeDownloads = new Map<number, boolean>();
 
 interface PendingDownload {
@@ -58,6 +58,38 @@ export async function handleUrl(ctx: BotContext) {
 
   try {
     if (useCobalt) {
+      const isAudioOnly = parsed.platform === 'soundcloud';
+
+      if (isAudioOnly) {
+        pendingSelections.set(user.telegramId, {
+          url: parsed.url,
+          platform: parsed.platform,
+          title: 'دانلود از ' + parsed.platform,
+          uploader: '',
+          duration: 0,
+          qualities: ['audio'],
+          useCobalt: true,
+        });
+
+        await ctx.api.editMessageText(
+          statusMsg.chat.id,
+          statusMsg.message_id,
+          `🎵 لینک **${parsed.platform}** شناسایی شد.\n\n⏳ در حال دانلود صدا...`,
+          { parse_mode: 'Markdown' },
+        );
+        pendingSelections.delete(user.telegramId);
+        await executeDownload(ctx, user, {
+          url: parsed.url,
+          platform: parsed.platform,
+          title: 'دانلود از ' + parsed.platform,
+          uploader: '',
+          duration: 0,
+          qualities: ['audio'],
+          useCobalt: true,
+        }, 'audio');
+        return;
+      }
+
       pendingSelections.set(user.telegramId, {
         url: parsed.url,
         platform: parsed.platform,
