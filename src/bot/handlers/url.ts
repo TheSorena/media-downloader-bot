@@ -277,7 +277,7 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
   let lastUpdate = 0;
 
   try {
-    let result: { filePath: string; fileSize: number; title: string; duration: number; format: string };
+    let result!: { filePath: string; fileSize: number; title: string; duration: number; format: string };
 
     if (pending.useCobalt) {
       await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از ' + pending.platform + '...');
@@ -301,27 +301,59 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
         logger.warn('cobalt failed, trying fallback', cobaltErr.message);
 
         if (isYouTubeUrl(pending.url)) {
-          await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (روش دوم)...');
-          result = await downloadYouTube({
-            url: pending.url,
-            quality: actualQuality,
-            audioOnly,
-            outputDir: config.downloadDir,
-            onProgress: async (percent, speedMBps, eta) => {
-              const now = Date.now();
-              if (now - lastUpdate < 3000) return;
-              lastUpdate = now;
-              try {
-                const downloaded = (result?.fileSize || 0) * (percent / 100);
-                await ctx.api.editMessageText(
-                  progressMsg.chat.id,
-                  progressMsg.message_id,
-                  fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
-                  { reply_markup: progressKeyboard() },
-                );
-              } catch { /* ignore edit errors */ }
-            },
-          });
+          let ytSuccess = false;
+
+          // Try YouTube.js first
+          try {
+            await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (روش دوم)...');
+            result = await downloadYouTube({
+              url: pending.url,
+              quality: actualQuality,
+              audioOnly,
+              outputDir: config.downloadDir,
+              onProgress: async (percent, speedMBps, eta) => {
+                const now = Date.now();
+                if (now - lastUpdate < 3000) return;
+                lastUpdate = now;
+                try {
+                  const downloaded = (result?.fileSize || 0) * (percent / 100);
+                  await ctx.api.editMessageText(
+                    progressMsg.chat.id,
+                    progressMsg.message_id,
+                    fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
+                    { reply_markup: progressKeyboard() },
+                  );
+                } catch { /* ignore edit errors */ }
+              },
+            });
+            ytSuccess = true;
+          } catch (ytErr: any) {
+            logger.warn('YouTube.js also failed, trying yt-dlp', ytErr.message);
+          }
+
+          // Try yt-dlp as last resort
+          if (!ytSuccess) {
+            await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (yt-dlp)...');
+            result = await downloadVideo({
+              url: pending.url,
+              quality: actualQuality,
+              audioOnly,
+              outputDir: config.downloadDir,
+              onProgress: async (percent, speedMBps, eta) => {
+                const now = Date.now();
+                if (now - lastUpdate < 3000) return;
+                lastUpdate = now;
+                try {
+                  await ctx.api.editMessageText(
+                    progressMsg.chat.id,
+                    progressMsg.message_id,
+                    fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta)),
+                    { reply_markup: progressKeyboard() },
+                  );
+                } catch { /* ignore edit errors */ }
+              },
+            });
+          }
         } else {
           throw cobaltErr;
         }
@@ -370,7 +402,28 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
             format: audioOnly ? 'mp3' : 'mp4',
           };
         } catch {
-          throw ytErr;
+          // cobalt also failed, try yt-dlp
+          logger.warn('cobalt also failed, trying yt-dlp');
+          await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (yt-dlp)...');
+          result = await downloadVideo({
+            url: pending.url,
+            quality: actualQuality,
+            audioOnly,
+            outputDir: config.downloadDir,
+            onProgress: async (percent, speedMBps, eta) => {
+              const now = Date.now();
+              if (now - lastUpdate < 3000) return;
+              lastUpdate = now;
+              try {
+                await ctx.api.editMessageText(
+                  progressMsg.chat.id,
+                  progressMsg.message_id,
+                  fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta)),
+                  { reply_markup: progressKeyboard() },
+                );
+              } catch { /* ignore edit errors */ }
+            },
+          });
         }
       }
     } else {
