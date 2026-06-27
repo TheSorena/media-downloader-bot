@@ -51,6 +51,9 @@ export const config = {
   cobalt: {
     apiUrl: process.env.COBALT_API_URL ?? 'http://localhost:9000',
   },
+  cookies: {
+    path: process.env.COOKIE_FILE ?? '',
+  },
   downloadDir: required('DOWNLOAD_DIR', './downloads'),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   isDev: process.env.NODE_ENV !== 'production',

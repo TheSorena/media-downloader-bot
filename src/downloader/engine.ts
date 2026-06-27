@@ -67,9 +67,13 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
       '--no-check-certificates',
       '--geo-bypass',
       '--user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-      '--extractor-args', 'youtube:player_client=tv_embedded,web',
+      '--extractor-args', 'youtube:player_client=tv',
       url,
     ];
+
+    if (config.cookies.path) {
+      args.push('--cookies', config.cookies.path);
+    }
 
     const proc = spawn('yt-dlp', args, { timeout: 30000 });
     let stdout = '';
@@ -164,7 +168,7 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
     '--no-check-certificates',
     '--geo-bypass',
     '--user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-    '--extractor-args', 'youtube:player_client=tv_embedded,web',
+    '--extractor-args', 'youtube:player_client=tv',
     '--newline',
     '--progress',
     '--progress-template', '%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s',
@@ -174,6 +178,10 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
 
   if (ffmpegLocation) {
     args.push('--ffmpeg-location', ffmpegLocation);
+  }
+
+  if (config.cookies.path) {
+    args.push('--cookies', config.cookies.path);
   }
 
   if (audioOnly) {
