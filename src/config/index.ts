@@ -54,6 +54,9 @@ export const config = {
   cookies: {
     path: process.env.COOKIE_FILE ?? '',
   },
+  webhook: {
+    port: num('PORT', 3000),
+  },
   downloadDir: required('DOWNLOAD_DIR', './downloads'),
   nodeEnv: process.env.NODE_ENV ?? 'development',
   isDev: process.env.NODE_ENV !== 'production',

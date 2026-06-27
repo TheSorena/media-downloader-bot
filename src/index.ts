@@ -1,12 +1,10 @@
 import mongoose from 'mongoose';
-import { createServer } from 'node:http';
 import { config } from './config/index.js';
 import { createBot } from './bot/bot.js';
+import { setupWebhookServer } from './webhook.js';
 import { logger } from './utils/logger.js';
 import { mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-
-const PORT = process.env.PORT ? Number(process.env.PORT) : 0;
 
 async function main() {
   logger.info('در حال راه‌اندازی ربات مدیا دانلودر...');
@@ -14,13 +12,6 @@ async function main() {
   if (!existsSync(config.downloadDir)) {
     await mkdir(config.downloadDir, { recursive: true });
     logger.info('پوشه دانلود ساخته شد', config.downloadDir);
-  }
-
-  if (PORT) {
-    createServer((req, res) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', bot: 'MediaDownloader' }));
-    }).listen(PORT, () => logger.info(`Health server running on port ${PORT}`));
   }
 
   logger.info('در حال اتصال به MongoDB...', { uri: config.db.uri });
@@ -31,6 +22,8 @@ async function main() {
 
   const me = await bot.api.getMe();
   logger.info('ربات راه‌اندازی شد', { username: me.username, name: me.first_name });
+
+  setupWebhookServer(bot);
 
   bot.start({
     onStart: () => logger.info('ربات با موفقیت شروع به کار کرد. ✅'),

@@ -4,7 +4,7 @@ import { getVideoInfo, downloadVideo, deleteFile, cleanupTempFiles } from '../..
 import { getYouTubeInfo, downloadYouTube } from '../../downloader/youtube.js';
 import { cobaltDownloadFile } from '../../downloader/cobalt.js';
 import { checkQuota } from '../middlewares/quota.js';
-import { qualityKeyboard } from '../keyboards.js';
+import { qualityKeyboard, progressKeyboard } from '../keyboards.js';
 import { InputFile } from 'grammy';
 import { fa } from '../../locales/fa.js';
 import { formatBytes, formatDuration, formatNumber, getDayKey } from '../../utils/formatter.js';
@@ -13,7 +13,7 @@ import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
 const COBALT_PLATFORMS = ['youtube', 'instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch'];
-const activeDownloads = new Map<number, boolean>();
+export const activeDownloads = new Map<number, boolean>();
 
 interface PendingDownload {
   url: string;
@@ -46,13 +46,15 @@ export async function handleUrl(ctx: BotContext) {
   }
 
   if (parsed.isPlaylist) {
-    await ctx.reply('⚠️ دانلود پلی‌لیست فقط برای کاربران پرمیوم در دسترس است.');
-    return;
+    if (!user.isPremiumActive()) {
+      await ctx.reply(fa.playlistNotSupported);
+      return;
+    }
   }
 
   const statusMsg = await ctx.reply(fa.waitingForInfo);
   const useCobalt = COBALT_PLATFORMS.includes(parsed.platform);
-  const isYouTube = isYouTubeUrl(parsed.url);
+  const isYt = isYouTubeUrl(parsed.url);
 
   try {
     if (useCobalt) {
@@ -69,20 +71,21 @@ export async function handleUrl(ctx: BotContext) {
       await ctx.api.editMessageText(
         statusMsg.chat.id,
         statusMsg.message_id,
-        `🔗 لینک ${parsed.platform} شناسایی شد.\n\nکیفیت مورد نظر رو انتخاب کنید:`,
-        { reply_markup: qualityKeyboard(['1080p', '720p', '480p']) },
+        fa.cobaltDetected(parsed.platform),
+        { parse_mode: 'Markdown', reply_markup: qualityKeyboard(['1080p', '720p', '480p']) },
       );
-    } else if (isYouTube) {
+    } else if (isYt) {
       const info = await getYouTubeInfo(parsed.url);
       const durationStr = info.duration > 0 ? formatDuration(info.duration) : 'نامشخص';
 
-      let msg = `🎬 **${info.title}**\n`;
-      if (info.uploader) msg += `👤 ${info.uploader}\n`;
-      if (info.duration > 0) msg += `⏱ مدت: ${durationStr}\n`;
-      if (info.viewCount > 0) msg += `👁 بازدید: ${formatNumber(info.viewCount)}\n`;
-      if (info.likeCount > 0) msg += `❤️ لایک: ${formatNumber(info.likeCount)}\n`;
-      if (info.description) msg += `\n📝 ${info.description.slice(0, 150)}${info.description.length > 150 ? '...' : ''}\n`;
-      msg += `\nکیفیت مورد نظر رو انتخاب کنید:`;
+      const msg = fa.chooseQuality(
+        info.title,
+        info.uploader || '',
+        durationStr,
+        info.viewCount,
+        info.likeCount,
+        info.description,
+      );
 
       pendingSelections.set(user.telegramId, {
         url: parsed.url,
@@ -107,13 +110,14 @@ export async function handleUrl(ctx: BotContext) {
       const isAudioPlatform = isSoundCloud || info.isAudio;
 
       if (isAudioPlatform) {
-        let msg = `🎵 **${info.title}**\n`;
-        if (info.uploader) msg += `👤 ${info.uploader}\n`;
-        if (info.duration > 0) msg += `⏱ مدت: ${durationStr}\n`;
-        if (info.viewCount > 0) msg += `👁 بازدید: ${formatNumber(info.viewCount)}\n`;
-        if (info.likeCount > 0) msg += `❤️ لایک: ${formatNumber(info.likeCount)}\n`;
-        if (info.description) msg += `\n📝 ${info.description.slice(0, 200)}${info.description.length > 200 ? '...' : ''}\n`;
-        msg += `\n🎵 در حال استخراج صدا...`;
+        const msg = fa.chooseQuality(
+          info.title,
+          info.uploader || '',
+          durationStr,
+          info.viewCount,
+          info.likeCount,
+          info.description,
+        );
 
         await ctx.api.editMessageText(statusMsg.chat.id, statusMsg.message_id, msg, { parse_mode: 'Markdown' });
         pendingSelections.delete(user.telegramId);
@@ -139,13 +143,14 @@ export async function handleUrl(ctx: BotContext) {
         useCobalt: false,
       });
 
-      let msg = `🎬 **${info.title}**\n`;
-      if (info.uploader) msg += `👤 ${info.uploader}\n`;
-      if (info.duration > 0) msg += `⏱ مدت: ${durationStr}\n`;
-      if (info.viewCount > 0) msg += `👁 بازدید: ${formatNumber(info.viewCount)}\n`;
-      if (info.likeCount > 0) msg += `❤️ لایک: ${formatNumber(info.likeCount)}\n`;
-      if (info.description) msg += `\n📝 ${info.description.slice(0, 150)}${info.description.length > 150 ? '...' : ''}\n`;
-      msg += `\nکیفیت مورد نظر رو انتخاب کنید:`;
+      const msg = fa.chooseQuality(
+        info.title,
+        info.uploader || '',
+        durationStr,
+        info.viewCount,
+        info.likeCount,
+        info.description,
+      );
 
       await ctx.api.editMessageText(
         statusMsg.chat.id,
@@ -171,12 +176,17 @@ export async function handleQualitySelection(ctx: BotContext, quality: string) {
 
   const pending = pendingSelections.get(user.telegramId);
   if (!pending) {
-    await ctx.reply('⏱ زمان انتخاب کیفیت به پایان رسیده. لطفاً دوباره لینک را بفرستید.');
+    await ctx.reply('⏱ زمان انتخاب کیفیت تمام شد. لطفاً دوباره لینک رو بفرست.');
     return;
   }
 
   pendingSelections.delete(user.telegramId);
-  await executeDownload(ctx, user, pending, quality);
+
+  if (user.settings?.preferAudio && quality !== 'audio') {
+    await executeDownload(ctx, user, pending, 'audio');
+  } else {
+    await executeDownload(ctx, user, pending, quality);
+  }
 }
 
 async function executeDownload(ctx: BotContext, user: any, pending: PendingDownload, quality: string) {
@@ -198,7 +208,9 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
   });
   await downloadDoc.save();
 
-  const progressMsg = await ctx.reply(fa.downloadStarted);
+  const progressMsg = await ctx.reply(fa.downloadStarted, {
+    reply_markup: progressKeyboard(),
+  });
 
   let lastUpdate = 0;
 
@@ -206,7 +218,7 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
     let result: { filePath: string; fileSize: number; title: string; duration: number; format: string };
 
     if (pending.useCobalt) {
-      await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از اینستاگرام...');
+      await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از ' + pending.platform + '...');
       const cobaltRes = await cobaltDownloadFile(
         { url: pending.url, videoQuality: actualQuality, audioOnly },
         config.downloadDir,
@@ -217,12 +229,12 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
       result = {
         filePath: cobaltRes.filePath,
         fileSize: stats.size,
-        title: cleanName || 'دانلود از اینستاگرام',
+        title: cleanName || 'دانلود از ' + pending.platform,
         duration: 0,
         format: audioOnly ? 'mp3' : 'mp4',
       };
     } else if (isYouTubeUrl(pending.url)) {
-      await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (YouTube.js)...');
+      await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب...');
       result = await downloadYouTube({
         url: pending.url,
         quality: actualQuality,
@@ -230,13 +242,15 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
         outputDir: config.downloadDir,
         onProgress: async (percent, speedMBps, eta) => {
           const now = Date.now();
-          if (now - lastUpdate < 2000) return;
+          if (now - lastUpdate < 3000) return;
           lastUpdate = now;
           try {
+            const downloaded = (result?.fileSize || 0) * (percent / 100);
             await ctx.api.editMessageText(
               progressMsg.chat.id,
               progressMsg.message_id,
-              fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta)),
+              fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
+              { reply_markup: progressKeyboard() },
             );
           } catch { /* ignore edit errors */ }
         },
@@ -249,13 +263,14 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
         outputDir: config.downloadDir,
         onProgress: async (percent, speedMBps, eta) => {
           const now = Date.now();
-          if (now - lastUpdate < 2000) return;
+          if (now - lastUpdate < 3000) return;
           lastUpdate = now;
           try {
             await ctx.api.editMessageText(
               progressMsg.chat.id,
               progressMsg.message_id,
               fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta)),
+              { reply_markup: progressKeyboard() },
             );
           } catch { /* ignore edit errors */ }
         },
@@ -276,19 +291,27 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
     await downloadDoc.save();
 
     const isVideo = !audioOnly;
-    const caption = fa.success(result.title, formatBytes(result.fileSize), pending.uploader, pending.platform);
+    const caption = fa.success(result.title, formatBytes(result.fileSize), pending.uploader, pending.platform, actualQuality);
 
+    let sentMsg;
     if (isVideo) {
-      await ctx.replyWithVideo(new InputFile(result.filePath), {
+      sentMsg = await ctx.replyWithVideo(new InputFile(result.filePath), {
         caption,
         parse_mode: 'Markdown',
       });
     } else {
-      await ctx.replyWithAudio(new InputFile(result.filePath), {
+      sentMsg = await ctx.replyWithAudio(new InputFile(result.filePath), {
         caption,
         parse_mode: 'Markdown',
         title: result.title,
       });
+    }
+
+    if (sentMsg) {
+      await Download.updateOne(
+        { _id: downloadDoc._id },
+        { $set: { telegramMessageId: sentMsg.message_id } },
+      );
     }
 
     await ctx.api.deleteMessage(progressMsg.chat.id, progressMsg.message_id).catch(() => {});
@@ -326,6 +349,23 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
 
 export async function handleCancel(ctx: BotContext) {
   await ctx.answerCallbackQuery();
-  pendingSelections.delete(ctx.from?.id ?? 0);
+  const user = ctx.session.user;
+  if (user) {
+    pendingSelections.delete(user.telegramId);
+  }
   await ctx.reply(fa.cancelled);
+}
+
+export async function handleDownloadCancel(ctx: BotContext) {
+  await ctx.answerCallbackQuery();
+  const user = ctx.session.user;
+  if (!user) return;
+
+  if (!activeDownloads.has(user.telegramId)) {
+    await ctx.reply(fa.noActiveDownload);
+    return;
+  }
+
+  activeDownloads.delete(user.telegramId);
+  await ctx.reply(fa.cancelActive);
 }

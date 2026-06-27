@@ -13,6 +13,8 @@ interface IUser {
   totalBytesDownloaded: number;
   quota: { date: string; bytesUsed: number };
   settings: { defaultQuality: string; preferAudio: boolean };
+  referral: { code: string; referredBy: number; referralCount: number; bonusBytes: number };
+  payment: { invoiceId: string; plan: string; status: string; paidAt: Date | null; amount: number };
   joinedAt: Date;
   lastActiveAt: Date;
   getDailyQuotaUsed(dayKey: string): number;
@@ -36,6 +38,8 @@ class UserModel {
   totalBytesDownloaded: number = 0;
   quota: { date: string; bytesUsed: number } = { date: '', bytesUsed: 0 };
   settings: { defaultQuality: string; preferAudio: boolean } = { defaultQuality: '720p', preferAudio: false };
+  referral: { code: string; referredBy: number; referralCount: number; bonusBytes: number } = { code: '', referredBy: 0, referralCount: 0, bonusBytes: 0 };
+  payment: { invoiceId: string; plan: string; status: string; paidAt: Date | null; amount: number } = { invoiceId: '', plan: '', status: '', paidAt: null, amount: 0 };
   joinedAt: Date = new Date();
   lastActiveAt: Date = new Date();
 
@@ -65,13 +69,40 @@ class UserModel {
 
   async save(): Promise<void> {}
 
-  static async findOne(query: { telegramId: number }): Promise<IUser | null> {
-    return users.get(query.telegramId) ?? null;
+  static async findOne(query: any): Promise<IUser | null> {
+    if (query.telegramId) return users.get(query.telegramId) ?? null;
+    if (query['payment.invoiceId']) {
+      for (const u of users.values()) {
+        if (u.payment.invoiceId === query['payment.invoiceId']) return u;
+      }
+    }
+    return null;
   }
 
-  static async updateOne(query: { telegramId: number }, update: { $set: Partial<IUser> }): Promise<void> {
-    const user = users.get(query.telegramId);
-    if (user) Object.assign(user, update.$set);
+  static async updateOne(query: any, update: any): Promise<void> {
+    const tid = query.telegramId;
+    const user = users.get(tid);
+    if (user && update.$set) Object.assign(user, update.$set);
+  }
+
+  static async countDocuments(): Promise<number> {
+    return users.size;
+  }
+
+  static find(query?: any): any {
+    return {
+      sort: () => ({
+        limit: () => ({
+          lean: () => Promise.resolve([]),
+        }),
+        lean: () => Promise.resolve([]),
+      }),
+      lean: () => Promise.resolve([]),
+    };
+  }
+
+  static async aggregate(): Promise<any[]> {
+    return [];
   }
 }
 

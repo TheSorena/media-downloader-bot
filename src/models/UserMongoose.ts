@@ -25,6 +25,21 @@ const UserSchema = new Schema(
       preferAudio: { type: Boolean, default: false },
     },
 
+    referral: {
+      code: { type: String, default: '' },
+      referredBy: { type: Number, default: 0 },
+      referralCount: { type: Number, default: 0 },
+      bonusBytes: { type: Number, default: 0 },
+    },
+
+    payment: {
+      invoiceId: { type: String, default: '' },
+      plan: { type: String, default: '' },
+      status: { type: String, default: '' },
+      paidAt: { type: Date, default: null },
+      amount: { type: Number, default: 0 },
+    },
+
     joinedAt: { type: Date, default: Date.now },
     lastActiveAt: { type: Date, default: Date.now },
   },
