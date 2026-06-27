@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Start cobalt API in background
+# Start cobalt API in background with cookies if available
 cd /cobalt/api
+if [ -f /app/cookies/cobalt-cookies.json ]; then
+  export COOKIE_PATH=/app/cookies/cobalt-cookies.json
+  echo "Cobalt cookies loaded from $COOKIE_PATH"
+fi
 pnpm start &
 COBALT_PID=$!
 
