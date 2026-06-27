@@ -12,7 +12,6 @@ import { Download } from '../../models/Download.js';
 import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
-const COBALT_PLATFORMS = ['youtube', 'instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch', 'soundcloud'];
 export const activeDownloads = new Map<number, boolean>();
 
 interface PendingDownload {
@@ -53,43 +52,104 @@ export async function handleUrl(ctx: BotContext) {
   }
 
   const statusMsg = await ctx.reply(fa.waitingForInfo);
-  const useCobalt = COBALT_PLATFORMS.includes(parsed.platform);
   const isYt = isYouTubeUrl(parsed.url);
+  const nonYtCobalt = ['instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch'].includes(parsed.platform);
+  const isSoundCloud = parsed.platform === 'soundcloud';
 
   try {
-    if (useCobalt) {
-      const isAudioOnly = parsed.platform === 'soundcloud';
+    if (isSoundCloud) {
+      pendingSelections.set(user.telegramId, {
+        url: parsed.url,
+        platform: parsed.platform,
+        title: 'دانلود از SoundCloud',
+        uploader: '',
+        duration: 0,
+        qualities: ['audio'],
+        useCobalt: true,
+      });
 
-      if (isAudioOnly) {
+      await ctx.api.editMessageText(
+        statusMsg.chat.id,
+        statusMsg.message_id,
+        '🎵 لینک **SoundCloud** شناسایی شد.\n\n⏳ در حال دانلود صدا...',
+        { parse_mode: 'Markdown' },
+      );
+      pendingSelections.delete(user.telegramId);
+      await executeDownload(ctx, user, {
+        url: parsed.url,
+        platform: 'soundcloud',
+        title: 'دانلود از SoundCloud',
+        uploader: '',
+        duration: 0,
+        qualities: ['audio'],
+        useCobalt: true,
+      }, 'audio');
+      return;
+    }
+
+    if (isYt) {
+      let ytInfo: any = null;
+      let ytFailed = false;
+
+      try {
+        ytInfo = await getYouTubeInfo(parsed.url);
+      } catch (e: any) {
+        logger.warn('YouTube.js info failed, will try cobalt', e.message);
+        ytFailed = true;
+      }
+
+      if (ytInfo) {
+        const durationStr = ytInfo.duration > 0 ? formatDuration(ytInfo.duration) : 'نامشخص';
+        const msg = fa.chooseQuality(
+          ytInfo.title,
+          ytInfo.uploader || '',
+          durationStr,
+          ytInfo.viewCount,
+          ytInfo.likeCount,
+          ytInfo.description,
+        );
+
         pendingSelections.set(user.telegramId, {
           url: parsed.url,
-          platform: parsed.platform,
-          title: 'دانلود از ' + parsed.platform,
+          platform: 'youtube',
+          title: ytInfo.title,
+          uploader: ytInfo.uploader,
+          duration: ytInfo.duration,
+          qualities: ytInfo.availableQualities,
+          useCobalt: false,
+        });
+
+        await ctx.api.editMessageText(
+          statusMsg.chat.id,
+          statusMsg.message_id,
+          msg,
+          { parse_mode: 'Markdown', reply_markup: qualityKeyboard(ytInfo.availableQualities) },
+        );
+        return;
+      }
+
+      if (ytFailed) {
+        pendingSelections.set(user.telegramId, {
+          url: parsed.url,
+          platform: 'youtube',
+          title: 'دانلود از یوتیوب',
           uploader: '',
           duration: 0,
-          qualities: ['audio'],
+          qualities: ['1080p', '720p', '480p'],
           useCobalt: true,
         });
 
         await ctx.api.editMessageText(
           statusMsg.chat.id,
           statusMsg.message_id,
-          `🎵 لینک **${parsed.platform}** شناسایی شد.\n\n⏳ در حال دانلود صدا...`,
-          { parse_mode: 'Markdown' },
+          '🔗 لینک **یوتیوب** شناسایی شد.\n\n⚠️ دانلود مستقیم ممکن نیست. از cobalt استفاده می‌شه.\n\nکیفیت مورد نظر رو انتخاب کن:',
+          { parse_mode: 'Markdown', reply_markup: qualityKeyboard(['1080p', '720p', '480p']) },
         );
-        pendingSelections.delete(user.telegramId);
-        await executeDownload(ctx, user, {
-          url: parsed.url,
-          platform: parsed.platform,
-          title: 'دانلود از ' + parsed.platform,
-          uploader: '',
-          duration: 0,
-          qualities: ['audio'],
-          useCobalt: true,
-        }, 'audio');
         return;
       }
+    }
 
+    if (nonYtCobalt) {
       pendingSelections.set(user.telegramId, {
         url: parsed.url,
         platform: parsed.platform,
@@ -106,40 +166,10 @@ export async function handleUrl(ctx: BotContext) {
         fa.cobaltDetected(parsed.platform),
         { parse_mode: 'Markdown', reply_markup: qualityKeyboard(['1080p', '720p', '480p']) },
       );
-    } else if (isYt) {
-      const info = await getYouTubeInfo(parsed.url);
-      const durationStr = info.duration > 0 ? formatDuration(info.duration) : 'نامشخص';
-
-      const msg = fa.chooseQuality(
-        info.title,
-        info.uploader || '',
-        durationStr,
-        info.viewCount,
-        info.likeCount,
-        info.description,
-      );
-
-      pendingSelections.set(user.telegramId, {
-        url: parsed.url,
-        platform: 'youtube',
-        title: info.title,
-        uploader: info.uploader,
-        duration: info.duration,
-        qualities: info.availableQualities,
-        useCobalt: false,
-      });
-
-      await ctx.api.editMessageText(
-        statusMsg.chat.id,
-        statusMsg.message_id,
-        msg,
-        { parse_mode: 'Markdown', reply_markup: qualityKeyboard(info.availableQualities) },
-      );
     } else {
       const info = await getVideoInfo(parsed.url);
       const durationStr = info.duration > 0 ? formatDuration(info.duration) : 'نامشخص';
-      const isSoundCloud = parsed.platform === 'soundcloud';
-      const isAudioPlatform = isSoundCloud || info.isAudio;
+      const isAudioPlatform = info.isAudio;
 
       if (isAudioPlatform) {
         const msg = fa.chooseQuality(
@@ -251,42 +281,98 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
 
     if (pending.useCobalt) {
       await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از ' + pending.platform + '...');
-      const cobaltRes = await cobaltDownloadFile(
-        { url: pending.url, videoQuality: actualQuality, audioOnly },
-        config.downloadDir,
-      );
-      const { stat } = await import('node:fs/promises');
-      const stats = await stat(cobaltRes.filePath);
-      const cleanName = cobaltRes.filename.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
-      result = {
-        filePath: cobaltRes.filePath,
-        fileSize: stats.size,
-        title: cleanName || 'دانلود از ' + pending.platform,
-        duration: 0,
-        format: audioOnly ? 'mp3' : 'mp4',
-      };
+
+      try {
+        const cobaltRes = await cobaltDownloadFile(
+          { url: pending.url, videoQuality: actualQuality, audioOnly },
+          config.downloadDir,
+        );
+        const { stat } = await import('node:fs/promises');
+        const stats = await stat(cobaltRes.filePath);
+        const cleanName = cobaltRes.filename.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
+        result = {
+          filePath: cobaltRes.filePath,
+          fileSize: stats.size,
+          title: cleanName || 'دانلود از ' + pending.platform,
+          duration: 0,
+          format: audioOnly ? 'mp3' : 'mp4',
+        };
+      } catch (cobaltErr: any) {
+        logger.warn('cobalt failed, trying fallback', cobaltErr.message);
+
+        if (isYouTubeUrl(pending.url)) {
+          await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (روش دوم)...');
+          result = await downloadYouTube({
+            url: pending.url,
+            quality: actualQuality,
+            audioOnly,
+            outputDir: config.downloadDir,
+            onProgress: async (percent, speedMBps, eta) => {
+              const now = Date.now();
+              if (now - lastUpdate < 3000) return;
+              lastUpdate = now;
+              try {
+                const downloaded = (result?.fileSize || 0) * (percent / 100);
+                await ctx.api.editMessageText(
+                  progressMsg.chat.id,
+                  progressMsg.message_id,
+                  fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
+                  { reply_markup: progressKeyboard() },
+                );
+              } catch { /* ignore edit errors */ }
+            },
+          });
+        } else {
+          throw cobaltErr;
+        }
+      }
     } else if (isYouTubeUrl(pending.url)) {
       await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب...');
-      result = await downloadYouTube({
-        url: pending.url,
-        quality: actualQuality,
-        audioOnly,
-        outputDir: config.downloadDir,
-        onProgress: async (percent, speedMBps, eta) => {
-          const now = Date.now();
-          if (now - lastUpdate < 3000) return;
-          lastUpdate = now;
-          try {
-            const downloaded = (result?.fileSize || 0) * (percent / 100);
-            await ctx.api.editMessageText(
-              progressMsg.chat.id,
-              progressMsg.message_id,
-              fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
-              { reply_markup: progressKeyboard() },
-            );
-          } catch { /* ignore edit errors */ }
-        },
-      });
+
+      try {
+        result = await downloadYouTube({
+          url: pending.url,
+          quality: actualQuality,
+          audioOnly,
+          outputDir: config.downloadDir,
+          onProgress: async (percent, speedMBps, eta) => {
+            const now = Date.now();
+            if (now - lastUpdate < 3000) return;
+            lastUpdate = now;
+            try {
+              const downloaded = (result?.fileSize || 0) * (percent / 100);
+              await ctx.api.editMessageText(
+                progressMsg.chat.id,
+                progressMsg.message_id,
+                fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta), downloaded > 0 ? formatBytes(downloaded) : undefined),
+                { reply_markup: progressKeyboard() },
+              );
+            } catch { /* ignore edit errors */ }
+          },
+        });
+      } catch (ytErr: any) {
+        logger.warn('YouTube.js failed, trying cobalt fallback', ytErr.message);
+        await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (cobalt)...');
+
+        try {
+          const cobaltRes = await cobaltDownloadFile(
+            { url: pending.url, videoQuality: actualQuality, audioOnly },
+            config.downloadDir,
+          );
+          const { stat } = await import('node:fs/promises');
+          const stats = await stat(cobaltRes.filePath);
+          const cleanName = cobaltRes.filename.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
+          result = {
+            filePath: cobaltRes.filePath,
+            fileSize: stats.size,
+            title: cleanName || 'دانلود از یوتیوب',
+            duration: 0,
+            format: audioOnly ? 'mp3' : 'mp4',
+          };
+        } catch {
+          throw ytErr;
+        }
+      }
     } else {
       result = await downloadVideo({
         url: pending.url,
@@ -365,10 +451,20 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
     });
   } catch (err: any) {
     logger.error('خطا در فرآیند دانلود', err.message);
+
+    let errorMsg = err.message;
+    if (err.message?.includes('youtube.login') || err.message?.includes('Sign in to confirm')) {
+      errorMsg = 'یوتیوب دانلود مستقیم رو بلاک کرده. لطفاً کیفیت صدا (MP3) رو امتحان کنید.';
+    } else if (err.message?.includes('Private video')) {
+      errorMsg = 'این ویدیو خصوصیه و قابل دانلود نیست.';
+    } else if (err.message?.includes('Video unavailable')) {
+      errorMsg = 'این ویدیو در دسترس نیست.';
+    }
+
     await ctx.api.editMessageText(
       progressMsg.chat.id,
       progressMsg.message_id,
-      fa.error(err.message),
+      fa.error(errorMsg),
     ).catch(() => {});
 
     downloadDoc.status = 'failed';
