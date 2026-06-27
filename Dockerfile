@@ -12,7 +12,6 @@ RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir yt-dlp
 
 ENV PATH="/opt/venv/bin:$PATH"
-ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -25,7 +24,9 @@ COPY src/ ./src/
 
 RUN npm run build
 
-RUN npm ci --omit=dev && npm cache clean --force
+RUN rm -rf node_modules && npm ci --omit=dev && npm cache clean --force
+
+ENV NODE_ENV=production
 
 RUN mkdir -p /tmp/downloads
 
