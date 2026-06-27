@@ -11,6 +11,7 @@ import { cancelCommand } from './commands/cancel.js';
 import { adminCommand } from './commands/admin.js';
 import { premiumCommand } from './commands/premium.js';
 import { referralCommand } from './commands/referral.js';
+import { setCookiesCommand, handleCookieUpload } from './commands/cookies.js';
 import { handleUrl, handleQualitySelection, handleCancel, handleDownloadCancel } from './handlers/url.js';
 import {
   handleSettingsQuality,
@@ -63,6 +64,7 @@ export function createBot(): Bot<BotContext> {
   bot.command('admin', adminCommand);
   bot.command('premium', premiumCommand);
   bot.command('referral', referralCommand);
+  bot.command('setcookies', setCookiesCommand);
 
   bot.callbackQuery('menu:stats', handleMenuStats);
   bot.callbackQuery('menu:settings', handleMenuSettings);
@@ -127,6 +129,10 @@ export function createBot(): Bot<BotContext> {
       `${invoice.payment_url}`,
       { parse_mode: 'Markdown' },
     );
+  });
+
+  bot.on('message:document', async (ctx) => {
+    await handleCookieUpload(ctx);
   });
 
   bot.on('message:text', async (ctx, next) => {

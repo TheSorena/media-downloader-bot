@@ -71,8 +71,9 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
       url,
     ];
 
-    if (config.cookies.path) {
-      args.push('--cookies', config.cookies.path);
+    const cookiePath = process.env.COOKIE_FILE || config.cookies.path;
+    if (cookiePath) {
+      args.push('--cookies', cookiePath);
     }
 
     const proc = spawn('yt-dlp', args, { timeout: 30000 });
@@ -180,8 +181,9 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
     args.push('--ffmpeg-location', ffmpegLocation);
   }
 
-  if (config.cookies.path) {
-    args.push('--cookies', config.cookies.path);
+  const cookiePath2 = process.env.COOKIE_FILE || config.cookies.path;
+  if (cookiePath2) {
+    args.push('--cookies', cookiePath2);
   }
 
   if (audioOnly) {

@@ -39,7 +39,7 @@ RUN rm -rf node_modules && npm ci --omit=dev && npm cache clean --force
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-RUN mkdir -p /tmp/downloads
+RUN mkdir -p /tmp/downloads /app/cookies
 
 ENV NODE_ENV=production
 ENV API_URL=http://localhost:9000/
