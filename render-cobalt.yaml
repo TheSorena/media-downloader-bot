@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cobalt-api
+    runtime: docker
+    plan: free
+    dockerfilePath: Dockerfile.cobalt
+    envVars:
+      - key: API_URL
+        value: "https://cobalt-api.onrender.com/"
+      - key: API_PORT
+        value: "9000"

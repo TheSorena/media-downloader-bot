@@ -12,7 +12,7 @@ import { Download } from '../../models/Download.js';
 import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
-const COBALT_PLATFORMS: string[] = [];
+const COBALT_PLATFORMS = ['youtube', 'instagram', 'twitter', 'facebook', 'tiktok', 'reddit', 'twitch'];
 const activeDownloads = new Map<number, boolean>();
 
 interface PendingDownload {

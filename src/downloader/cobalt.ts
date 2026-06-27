@@ -16,7 +16,7 @@ export interface CobaltResult {
 }
 
 export async function cobaltDownload(opts: CobaltOptions): Promise<CobaltResult> {
-  const { url, videoQuality = '720', audioOnly = false } = opts;
+  const { url, videoQuality = '1080', audioOnly = false } = opts;
 
   const body: Record<string, any> = {
     url,
@@ -24,6 +24,7 @@ export async function cobaltDownload(opts: CobaltOptions): Promise<CobaltResult>
     videoQuality: videoQuality.replace('p', ''),
     audioFormat: 'mp3',
     audioBitrate: '128',
+    filenameStyle: 'pretty',
   };
 
   logger.info('cobalt request', { url, quality: videoQuality, audioOnly });
@@ -37,6 +38,12 @@ export async function cobaltDownload(opts: CobaltOptions): Promise<CobaltResult>
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(60000),
   });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    logger.error('cobalt HTTP error', { status: res.status, text });
+    return { status: 'error', error: `HTTP ${res.status}` };
+  }
 
   const data = await res.json() as any;
 
@@ -91,7 +98,8 @@ export async function cobaltDownloadFile(opts: CobaltOptions, destPath: string):
 
   const buffer = Buffer.from(await fileRes.arrayBuffer());
   const { writeFile } = await import('node:fs/promises');
-  const filePath = `${destPath}/${filename}`;
+  const { join } = await import('node:path');
+  const filePath = join(destPath, filename);
   await writeFile(filePath, buffer);
 
   logger.info('cobalt download complete', { filePath, size: buffer.length });
