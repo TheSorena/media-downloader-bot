@@ -7,8 +7,9 @@ import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 function findFfmpeg(): string | undefined {
+  const commands = process.platform === 'win32' ? 'where ffmpeg' : 'which ffmpeg';
   try {
-    const path = execSync('where ffmpeg', { encoding: 'utf-8' }).trim().split('\n')[0].trim();
+    const path = execSync(commands, { encoding: 'utf-8' }).trim().split('\n')[0].trim();
     return existsSync(path) ? path : undefined;
   } catch {
     return undefined;
@@ -64,7 +65,7 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
       '--no-playlist',
       '--no-warnings',
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-      '--extractor-args', 'youtube:player_client=web',
+      '--extractor-args', 'youtube:player_client=web_creator,mweb',
       url,
     ];
 
@@ -160,7 +161,7 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
     '--no-warnings',
     '--no-check-certificates',
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-    '--extractor-args', 'youtube:player_client=web',
+    '--extractor-args', 'youtube:player_client=web_creator,mweb',
     '--newline',
     '--progress',
     '--progress-template', '%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s',

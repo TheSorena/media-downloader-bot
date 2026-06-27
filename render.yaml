@@ -13,5 +13,5 @@ services:
         value: /tmp/downloads
       - key: NODE_ENV
         value: production
-      - key: COBALT_API_URL
-        value: http://localhost:9000
+      - key: PORT
+        value: "10000"
