@@ -156,7 +156,7 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
   activeDownloads.set(user.telegramId, true);
 
   const downloadDoc = new Download({
-    userId: user._id,
+    userId: user.telegramId,
     telegramId: user.telegramId,
     url: pending.url,
     platform: pending.platform,

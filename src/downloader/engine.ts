@@ -63,6 +63,8 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
       '--dump-json',
       '--no-playlist',
       '--no-warnings',
+      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      '--extractor-args', 'youtube:player_client=web',
       url,
     ];
 
@@ -157,6 +159,8 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
     '--no-playlist',
     '--no-warnings',
     '--no-check-certificates',
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+    '--extractor-args', 'youtube:player_client=web',
     '--newline',
     '--progress',
     '--progress-template', '%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s',
