@@ -149,11 +149,7 @@ function buildFormatSelector(quality: string, audioOnly: boolean): string {
   if (audioOnly) {
     return 'bestaudio/best';
   }
-  const heightMap: Record<string, number> = {
-    '360p': 360, '480p': 480, '720p': 720, '1080p': 1080, '1440p': 1440, '2160p': 2160,
-  };
-  const targetHeight = heightMap[quality] ?? 720;
-  return `bestvideo[height<=${targetHeight}]+bestaudio/best[height<=${targetHeight}]/best`;
+  return 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best';
 }
 
 export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResult> {
