@@ -1,6 +1,7 @@
 import type { BotContext } from '../middlewares/user.js';
 import { detectPlatform, isYouTubeUrl } from '../../utils/urlParser.js';
 import { getVideoInfo, downloadVideo, deleteFile, cleanupTempFiles } from '../../downloader/engine.js';
+import { getYouTubeInfo, downloadYouTube } from '../../downloader/youtube.js';
 import { cobaltDownloadFile } from '../../downloader/cobalt.js';
 import { checkQuota } from '../middlewares/quota.js';
 import { qualityKeyboard } from '../keyboards.js';
@@ -51,6 +52,7 @@ export async function handleUrl(ctx: BotContext) {
 
   const statusMsg = await ctx.reply(fa.waitingForInfo);
   const useCobalt = COBALT_PLATFORMS.includes(parsed.platform);
+  const isYouTube = isYouTubeUrl(parsed.url);
 
   try {
     if (useCobalt) {
@@ -69,6 +71,34 @@ export async function handleUrl(ctx: BotContext) {
         statusMsg.message_id,
         `🔗 لینک ${parsed.platform} شناسایی شد.\n\nکیفیت مورد نظر رو انتخاب کنید:`,
         { reply_markup: qualityKeyboard(['1080p', '720p', '480p']) },
+      );
+    } else if (isYouTube) {
+      const info = await getYouTubeInfo(parsed.url);
+      const durationStr = info.duration > 0 ? formatDuration(info.duration) : 'نامشخص';
+
+      let msg = `🎬 **${info.title}**\n`;
+      if (info.uploader) msg += `👤 ${info.uploader}\n`;
+      if (info.duration > 0) msg += `⏱ مدت: ${durationStr}\n`;
+      if (info.viewCount > 0) msg += `👁 بازدید: ${formatNumber(info.viewCount)}\n`;
+      if (info.likeCount > 0) msg += `❤️ لایک: ${formatNumber(info.likeCount)}\n`;
+      if (info.description) msg += `\n📝 ${info.description.slice(0, 150)}${info.description.length > 150 ? '...' : ''}\n`;
+      msg += `\nکیفیت مورد نظر رو انتخاب کنید:`;
+
+      pendingSelections.set(user.telegramId, {
+        url: parsed.url,
+        platform: 'youtube',
+        title: info.title,
+        uploader: info.uploader,
+        duration: info.duration,
+        qualities: info.availableQualities,
+        useCobalt: false,
+      });
+
+      await ctx.api.editMessageText(
+        statusMsg.chat.id,
+        statusMsg.message_id,
+        msg,
+        { parse_mode: 'Markdown', reply_markup: qualityKeyboard(info.availableQualities) },
       );
     } else {
       const info = await getVideoInfo(parsed.url);
@@ -191,6 +221,26 @@ async function executeDownload(ctx: BotContext, user: any, pending: PendingDownl
         duration: 0,
         format: audioOnly ? 'mp3' : 'mp4',
       };
+    } else if (isYouTubeUrl(pending.url)) {
+      await ctx.api.editMessageText(progressMsg.chat.id, progressMsg.message_id, '⬇️ دانلود از یوتیوب (YouTube.js)...');
+      result = await downloadYouTube({
+        url: pending.url,
+        quality: actualQuality,
+        audioOnly,
+        outputDir: config.downloadDir,
+        onProgress: async (percent, speedMBps, eta) => {
+          const now = Date.now();
+          if (now - lastUpdate < 2000) return;
+          lastUpdate = now;
+          try {
+            await ctx.api.editMessageText(
+              progressMsg.chat.id,
+              progressMsg.message_id,
+              fa.downloadProgress(percent, `${speedMBps.toFixed(1)} MB/s`, formatDuration(eta)),
+            );
+          } catch { /* ignore edit errors */ }
+        },
+      });
     } else {
       result = await downloadVideo({
         url: pending.url,
