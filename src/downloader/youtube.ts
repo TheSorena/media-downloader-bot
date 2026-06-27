@@ -1,4 +1,4 @@
-import { Innertube, UniversalCache, Utils } from 'youtubei.js';
+import { Innertube, UniversalCache, Utils, Platform } from 'youtubei.js';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { stat, readFile } from 'node:fs/promises';
@@ -6,6 +6,10 @@ import { createWriteStream, existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
+
+Platform.shim.eval = async (data: any) => {
+  return new Function(data.output)();
+};
 
 let innertube: Innertube | null = null;
 
