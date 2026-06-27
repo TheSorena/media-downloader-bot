@@ -18,15 +18,15 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --omit=dev || npm install --omit=dev
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src/ ./src/
 
 RUN npm run build
 
-RUN mkdir -p /tmp/downloads
+RUN npm ci --omit=dev && npm cache clean --force
 
-EXPOSE 3000
+RUN mkdir -p /tmp/downloads
 
 CMD ["node", "dist/index.js"]
