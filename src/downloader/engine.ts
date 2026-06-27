@@ -279,13 +279,14 @@ export async function downloadVideo(opts: DownloadOptions): Promise<DownloadResu
 }
 
 function extractError(stderr: string): string {
-  if (/Private video|Sign in|login/i.test(stderr)) return 'این محتوا نیاز به ورود دارد. لطفاً از لینک‌های عمومی استفاده کنید.';
+  logger.error('yt-dlp stderr', stderr.slice(-500));
+  if (/Private video|Sign in|login|bot|confirm/i.test(stderr)) return 'یوتیوب دانلود مستقیم رو از سرور بلاک کرده. لطفاً کیفیت صدا (MP3) رو امتحان کنید.';
   if (/Video unavailable|removed/i.test(stderr)) return 'این ویدیو حذف شده یا در دسترس نیست.';
   if (/HTTP Error 429|Too Many Requests/i.test(stderr)) return 'درخواست‌های زیادی ارسال شده. بعداً تلاش کنید.';
-  if (/Unsupported URL/i.test(stderr)) return 'این لینک پشتیبانی نمی‌شه. لطفاً از TikTok یا SoundCloud استفاده کنید.';
+  if (/Unsupported URL/i.test(stderr)) return 'این لینک پشتیبانی نمی‌شه.';
   if (/No video could be found/i.test(stderr)) return 'ویدیویی در این لینک پیدا نشد.';
   if (/ffmpeg not found/i.test(stderr)) return 'ابزار ffmpeg یافت نشد. با ادمین تماس بگیرید.';
-  return 'خطا در دانلود. لطفاً دوباره تلاش کنید.';
+  return 'خطا در دانلود: ' + stderr.slice(-200);
 }
 
 export async function deleteFile(filePath: string): Promise<void> {
