@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}داشبورد{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-gray-800 p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-300">👥 کل کاربران</h3>
+        <p class="text-3xl font-bold text-blue-400 mt-2">{{ total_users }}</p>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-300">📥 کل دانلودها</h3>
+        <p class="text-3xl font-bold text-green-400 mt-2">{{ total_downloads }}</p>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-300">📅 دانلودهای امروز</h3>
+        <p class="text-3xl font-bold text-yellow-400 mt-2">{{ today_downloads }}</p>
+    </div>
+</div>
+<div class="mt-8 bg-gray-800 p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold text-gray-300 mb-4">لینک‌های مفید</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/users" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-center">👥 کاربران</a>
+        <a href="/downloads" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-center">📥 دانلودها</a>
+        <a href="/settings" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded text-center">⚙️ تنظیمات</a>
+        <a href="/api/stats" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-center">📊 API</a>
+    </div>
+</div>
+{% endblock %}

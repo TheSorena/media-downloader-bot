@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}تنظیمات{% endblock %}
+{% block content %}
+<div class="bg-gray-800 p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">⚙️ تنظیمات سیستم</h2>
+    <form method="POST" action="/settings" class="space-y-4">
+        <div>
+            <label class="block text-gray-300 mb-2">حداکثر حجم فایل (MB)</label>
+            <input type="number" name="max_file_size" value="2048"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+            <label class="block text-gray-300 mb-2">سهمیه روزانه (MB)</label>
+            <input type="number" name="daily_quota" value="5120"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+            <label class="block text-gray-300 mb-2">کانال عضویت اجباری</label>
+            <input type="text" name="force_join_channel" placeholder="@channel"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500">
+        </div>
+        <button type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            ذخیره تنظیمات
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start cobalt API in background with cookies if available
+# Start cobalt API in background
 cd /cobalt/api
 if [ -f /app/cookies/cobalt-cookies.json ]; then
   export COOKIE_PATH=/app/cookies/cobalt-cookies.json
@@ -10,11 +10,17 @@ pnpm start &
 COBALT_PID=$!
 
 # Wait for cobalt to start
-sleep 5
+for i in $(seq 1 30); do
+  if curl -s http://localhost:9000/ > /dev/null 2>&1; then
+    echo "Cobalt is ready"
+    break
+  fi
+  sleep 1
+done
 
 # Start the bot
 cd /app
-node dist/index.js &
+python bot.py &
 BOT_PID=$!
 
 # Wait for both processes

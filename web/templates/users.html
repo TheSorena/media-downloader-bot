@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}کاربران{% endblock %}
+{% block content %}
+<div class="bg-gray-800 p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">👥 لیست کاربران</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-gray-700">
+                    <th class="py-2 px-4 text-right">شناسه</th>
+                    <th class="py-2 px-4 text-right">نام</th>
+                    <th class="py-2 px-4 text-right">یوزرنیم</th>
+                    <th class="py-2 px-4 text-right">دانلودها</th>
+                    <th class="py-2 px-4 text-right">وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="border-b border-gray-700 hover:bg-gray-700">
+                    <td class="py-2 px-4">{{ user.telegram_id }}</td>
+                    <td class="py-2 px-4">{{ user.first_name }} {{ user.last_name }}</td>
+                    <td class="py-2 px-4">{% if user.username %}@{{ user.username }}{% else %}-{% endif %}</td>
+                    <td class="py-2 px-4">{{ user.download_count }}</td>
+                    <td class="py-2 px-4">
+                        {% if user.is_premium %}
+                        <span class="text-yellow-400">💎 پرمیوم</span>
+                        {% else %}
+                        <span class="text-gray-400">🎁 رایگان</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

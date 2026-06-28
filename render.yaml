@@ -9,9 +9,13 @@ services:
         sync: false
       - key: MONGODB_URI
         sync: false
+      - key: ADMIN_IDS
+        value: "7696465274"
       - key: DOWNLOAD_DIR
         value: /tmp/downloads
-      - key: NODE_ENV
-        value: production
+      - key: COBALT_API_URL
+        value: http://localhost:9000/
+      - key: BOT_MODE
+        value: polling
       - key: PORT
         value: "10000"

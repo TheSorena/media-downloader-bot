@@ -1,106 +1,114 @@
-# 🎬 ربات مدیا دانلودر تلگرام
+# Media Downloader Bot
 
-رباتی حرفه‌ای برای دانلود ویدیو و صدا از یوتیوب، اینستاگرام، تیک‌تاک، X و هزاران سایت دیگر با Node.js و grammY.
+ربات تلگرام مدیا دانلودر حرفه‌ای - دانلود از یوتیوب، اینستاگرام، تیک‌تاک، X و...
 
-## ✨ قابلیت‌ها
+## قابلیت‌ها
 
-- 📥 دانلود از یوتیوب، اینستاگرام، تیک‌تاک، X (توییتر) و...
-- 🎵 استخراج صدا به صورت MP3
-- 🎬 انتخاب کیفیت (360p تا 2160p)
-- 📊 نوار پیشرفت زنده دانلود
-- 💾 پشتیبانی از فایل‌های تا ۲ گیگابایت (با Local Bot API)
-- 🎁 سهمیه روزانه ۵ گیگابایت برای کاربر رایگان
-- 💎 اشتراک پرمیوم با سهمیه نامحدود
-- 🗑️ حذف خودکار فایل پس از آپلود به تلگرام
+- دانلود ویدیو با کیفیت‌های مختلف (1080p, 720p, 480p, 360p)
+- استخراج صدا به صورت MP3
+- پشتیبانی از ۸+ پلتفرم
+- سیستم اشتراک پرمیوم با درگاه پرداخت BluePal
+- پنل مدیریت وب
+- سهمیه‌بندی روزانه برای کاربران رایگان
+- سیستم دعوت با پاداش
+- عضویت اجباری کانال
+- مدیریت کوکی یوتیوب
 
-## 🛠️ پیش‌نیازها
+## پلتفرم‌های پشتیبانی شده
 
-1. **ربات تلگرام**: از [@BotFather](https://t.me/BotFather) توکن دریافت کنید
-2. **api_id و api_hash**: از [my.telegram.org](https://my.telegram.org) برای Local Bot API
-3. **Docker و Docker Compose**
+- YouTube
+- Instagram
+- TikTok
+- X/Twitter
+- Facebook
+- Pinterest
+- Reddit
+- Vimeo
+- SoundCloud
 
-## 🚀 راه‌اندازی
+## نصب و راه‌اندازی
 
-### ۱. کپی فایل تنظیمات
+### پیش‌نیازها
+
+- Python 3.11+
+- Docker و Docker Compose
+- MongoDB (Atlas یا محلی)
+- ffmpeg
+
+### تنظیم محیط
+
+1. فایل `.env.example` رو کپی کنید و به `.env` تغییر نام دهید:
+
 ```bash
 cp .env.example .env
 ```
 
-### ۲. پر کردن فایل `.env`
+2. متغیرهای محیطی رو پر کنید:
+
 ```env
-BOT_TOKEN=your_bot_token_here
-TELEGRAM_API_ID=your_api_id
-TELEGRAM_API_HASH=your_api_hash
-ADMIN_IDS=your_telegram_id
+BOT_TOKEN=توکن_بات_تلگرام
+MONGODB_URI=mongodb+srv://...
+ADMIN_IDS=7696465274
+BLUEPAL_API_KEY=کلید_پرداخت
 ```
 
-### ۳. اجرا با Docker
+### اجرا با Docker
+
 ```bash
 docker compose up -d --build
 ```
 
-### ۴. مشاهده لاگ‌ها
+### اجرا بدون Docker
+
 ```bash
-docker compose logs -f bot
+pip install -r requirements.txt
+python bot.py
 ```
 
-## 📋 دستورات ربات
+## پنل مدیریت
+
+پنل مدیریت وب روی پورت 8000 در دسترس است:
+
+```
+http://localhost:8000
+```
+
+رمز عبور پیش‌فرض: `admin`
+
+## دستورات ربات
 
 | دستور | توضیح |
-|-------|--------|
-| `/start` | شروع و معرفی |
-| `/help` | راهنمای استفاده |
-| `/stats` | آمار و سهمیه روزانه |
-| `/premium` | خرید اشتراک پرمیوم |
+|-------|-------|
+| `/start` | شروع |
+| `/help` | راهنما |
+| `/stats` | آمار و سهمیه |
+| `/settings` | تنظیمات |
+| `/history` | تاریخچه دانلودها |
+| `/cancel` | لغو دانلود فعال |
+| `/premium` | خرید اشتراک |
+| `/referral` | سیستم دعوت |
+| `/admin` | پنل ادمین |
+| `/setcookies` | تنظیم کوکی یوتیوب |
 
-## 🏗️ ساختار پروژه
-
-```
-src/
-├── index.ts              # نقطه ورود
-├── config/               # پیکربندی
-├── bot/
-│   ├── bot.ts            # ساخت ربات grammY
-│   ├── middlewares/      # احراز هویت، سهمیه، بن
-│   ├── commands/         # start, help, stats
-│   ├── handlers/         # هندلر URL و دانلود
-│   └── keyboards.ts      # کیبوردهای شیشه‌ای
-├── downloader/
-│   └── engine.ts         # موتور yt-dlp + حذف فایل
-├── models/               # مدل‌های MongoDB
-├── utils/                # ابزارها
-└── locales/              # متن‌های فارسی
-```
-
-## 🔧 توسعه محلی (بدون Docker)
-
-```bash
-# نصب وابستگی‌ها
-npm install
-
-# اجرا در حالت توسعه
-npm run dev
-
-# بیلد
-npm run build && npm start
-```
-
-### پیش‌نیازهای محلی
-- Node.js 22+
-- Python 3 + yt-dlp (`pip install yt-dlp`)
-- ffmpeg
-- MongoDB (لوکال یا ابری)
-
-## 📐 معماری
+## ساختار پروژه
 
 ```
-Telegram ←→ Local Bot API (2GB upload) ←→ Node.js App
-                                              ↓
-                                    ┌─────────┴─────────┐
-                                    │                   │
-                                MongoDB            yt-dlp + ffmpeg
+python-bot/
+├── bot.py              # نقطه شروع اصلی
+├── config.py           # تنظیمات
+├── requirements.txt    # وابستگی‌ها
+├── Dockerfile          # بیلد Docker
+├── docker-compose.yml  # ربات + cobalt
+├── handlers/           # هندلرهای ربات
+├── core/               # هسته دانلود
+├── models/             # مدل‌های دیتابیس
+├── utils/              # ابزارها
+├── locales/            # متن‌های فارسی
+├── keyboards/          # کیبوردها
+├── web/                # پنل مدیریت وب
+└── data/               # ذخیره تنظیمات
 ```
 
-## 📝 لایسنس
+## لایسنس
 
 MIT

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}دانلودها{% endblock %}
+{% block content %}
+<div class="bg-gray-800 p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">📥 آخرین دانلودها</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-gray-400 border-b border-gray-700">
+                    <th class="py-2 px-4 text-right">عنوان</th>
+                    <th class="py-2 px-4 text-right">پلتفرم</th>
+                    <th class="py-2 px-4 text-right">کاربر</th>
+                    <th class="py-2 px-4 text-right">وضعیت</th>
+                    <th class="py-2 px-4 text-right">تاریخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dl in downloads %}
+                <tr class="border-b border-gray-700 hover:bg-gray-700">
+                    <td class="py-2 px-4">{{ dl.title or 'بدون عنوان' }}</td>
+                    <td class="py-2 px-4">{{ dl.platform }}</td>
+                    <td class="py-2 px-4">{{ dl.telegram_id }}</td>
+                    <td class="py-2 px-4">
+                        {% if dl.status == 'completed' %}
+                        <span class="text-green-400">✅</span>
+                        {% elif dl.status == 'failed' %}
+                        <span class="text-red-400">❌</span>
+                        {% else %}
+                        <span class="text-yellow-400">⏳</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4">{{ dl.created_at.strftime('%Y/%m/%d %H:%M') if dl.created_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
