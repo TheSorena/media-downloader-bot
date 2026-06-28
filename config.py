@@ -24,7 +24,7 @@ def _int(key: str, default: int = 0) -> int:
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 BOT_MODE = os.getenv("BOT_MODE", "polling")
-PORT = _int("PORT", 8000)
+PORT = _int("PORT", 10000)
 HOST = os.getenv("HOST", "0.0.0.0")
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")

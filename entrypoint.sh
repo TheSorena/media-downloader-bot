@@ -20,7 +20,7 @@ done
 
 # Start the bot
 cd /app
-python bot.py &
+python3 bot.py &
 BOT_PID=$!
 
 # Wait for both processes
