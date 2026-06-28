@@ -65,7 +65,7 @@ export async function handleCookieUpload(ctx: BotContext) {
       await mkdir(cookiesDir, { recursive: true });
     }
 
-    // Save cookies.txt for yt-dlp and YouTube.js
+    // Save cookies.txt for yt-dlp
     const cookiesPath = join(cookiesDir, 'cookies.txt');
     await writeFile(cookiesPath, content, 'utf-8');
     process.env.COOKIE_FILE = cookiesPath;
@@ -74,10 +74,6 @@ export async function handleCookieUpload(ctx: BotContext) {
     const cobaltCookies = convertToCobaltFormat(content);
     const cobaltCookiesPath = join(cookiesDir, 'cobalt-cookies.json');
     await writeFile(cobaltCookiesPath, JSON.stringify(cobaltCookies, null, 2), 'utf-8');
-
-    // Reset YouTube.js innertube
-    const { resetInnertube } = await import('../../downloader/youtube.js');
-    resetInnertube();
 
     const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
     await ctx.reply(

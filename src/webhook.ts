@@ -4,7 +4,6 @@ import { User } from './models/User.js';
 import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 import express from 'express';
-import { scrape, closeBrowser } from './api/scraper/index.js';
 
 export function setupWebhookServer(bot: Bot<BotContext>) {
   const app = express();
@@ -14,28 +13,6 @@ export function setupWebhookServer(bot: Bot<BotContext>) {
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', bot: 'MediaDownloader', timestamp: new Date().toISOString() });
-  });
-
-  app.get('/api/scrape', async (req, res) => {
-    const url = req.query.url as string;
-    if (!url) {
-      res.status(400).json({ success: false, error: 'Missing "url" query parameter' });
-      return;
-    }
-    logger.info(`[API] Scrape request: ${url}`);
-    const result = await scrape(url);
-    res.status(result.success ? 200 : 422).json(result);
-  });
-
-  app.post('/api/scrape', async (req, res) => {
-    const { url } = req.body;
-    if (!url) {
-      res.status(400).json({ success: false, error: 'Missing "url" in request body' });
-      return;
-    }
-    logger.info(`[API] Scrape request (POST): ${url}`);
-    const result = await scrape(url);
-    res.status(result.success ? 200 : 422).json(result);
   });
 
   app.post('/webhook', async (req, res) => {

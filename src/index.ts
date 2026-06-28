@@ -37,15 +37,11 @@ main().catch((err) => {
   process.exit(1);
 });
 
-process.on('SIGINT', async () => {
-  const { closeBrowser } = await import('./api/scraper/index.js');
-  await closeBrowser();
+process.on('SIGINT', () => {
   logger.info('دریافت SIGINT - در حال خاموش کردن...');
   process.exit(0);
 });
-process.on('SIGTERM', async () => {
-  const { closeBrowser } = await import('./api/scraper/index.js');
-  await closeBrowser();
+process.on('SIGTERM', () => {
   logger.info('دریافت SIGTERM - در حال خاموش کردن...');
   process.exit(0);
 });

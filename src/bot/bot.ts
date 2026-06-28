@@ -12,7 +12,7 @@ import { adminCommand } from './commands/admin.js';
 import { premiumCommand } from './commands/premium.js';
 import { referralCommand } from './commands/referral.js';
 import { setCookiesCommand, handleCookieUpload } from './commands/cookies.js';
-import { handleUrl, handleCancel, handleDownloadCancel } from './handlers/url.js';
+import { handleUrl, handleQualitySelection, handleCancel, handleDownloadCancel } from './handlers/url.js';
 import {
   handleSettingsQuality,
   handleSettingsAudioToggle,
@@ -85,7 +85,8 @@ export function createBot(): Bot<BotContext> {
   bot.callbackQuery('admin:cancel', handleAdminCancel);
 
   bot.callbackQuery(/^dl:(.+)$/, async (ctx) => {
-    await ctx.answerCallbackQuery('کیفیت انتخاب شد');
+    const quality = ctx.match![1];
+    await handleQualitySelection(ctx, quality);
   });
 
   bot.callbackQuery('cancel', handleCancel);
