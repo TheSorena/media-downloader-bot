@@ -5,6 +5,7 @@ import { setupWebhookServer } from './webhook.js';
 import { logger } from './utils/logger.js';
 import { mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { startApiServer } from './api/index.js';
 
 async function main() {
   logger.info('در حال راه‌اندازی ربات مدیا دانلودر...');
@@ -13,6 +14,8 @@ async function main() {
     await mkdir(config.downloadDir, { recursive: true });
     logger.info('پوشه دانلود ساخته شد', config.downloadDir);
   }
+
+  startApiServer(3001);
 
   logger.info('در حال اتصال به MongoDB...', { uri: config.db.uri });
   await mongoose.connect(config.db.uri);
