@@ -25,27 +25,17 @@ async function downloadFile(url: string, destPath: string): Promise<number> {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       'Accept': '*/*',
+      'Accept-Encoding': 'identity',
       'Referer': 'https://www.google.com/',
     },
-    signal: AbortSignal.timeout(120_000),
+    redirect: 'follow',
+    signal: AbortSignal.timeout(180_000),
   });
 
   if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
 
-  const ws = createWriteStream(destPath);
-  if (res.body) {
-    const reader = res.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      ws.write(value);
-    }
-  }
-  await new Promise<void>((resolve, reject) => {
-    ws.on('finish', resolve);
-    ws.on('error', reject);
-    ws.end();
-  });
+  const nodeStream = Readable.fromWeb(res.body as any);
+  await pipeline(nodeStream, createWriteStream(destPath));
 
   const { size } = await stat(destPath);
   return size;
