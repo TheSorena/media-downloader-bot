@@ -286,6 +286,21 @@ def main():
 
 def start_polling(bot: Bot, dp: Dispatcher):
     async def _run():
+        from aiohttp import web as aio_web
+
+        async def health_handler(request):
+            return aio_web.json_response({"status": "ok", "bot": "MediaDownloader"})
+
+        health_app = aio_web.Application()
+        health_app.router.add_get("/health", health_handler)
+        health_app.router.add_get("/", health_handler)
+
+        runner = aio_web.AppRunner(health_app)
+        await runner.setup()
+        site = aio_web.TCPSite(runner, HOST, PORT)
+        await site.start()
+        logger.info(f"Health server on port {PORT}")
+
         await on_startup()
         logger.info("Starting polling mode")
         await dp.start_polling(bot, drop_pending_updates=True)
