@@ -8,6 +8,7 @@ from core.downloader import (
     download_via_cobalt, probe_video, generate_thumbnail,
     cleanup_file, cleanup_thumbnail,
 )
+from core.ytdl import download_youtube, YtdlError
 from utils.formatter import format_bytes, format_duration, get_day_key, check_quota
 from utils.rate_limiter import rate_limiter
 from utils.cleanup import cleanup_temp_directory
@@ -150,6 +151,7 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
     user_id = user["telegram_id"]
     audio_only = quality == "audio"
     actual_quality = "audio" if audio_only else quality
+    is_youtube = platform == "YouTube"
 
     download_doc = download_model.create_download(user_id, url, platform, quality=actual_quality)
     download_model.update_download_status(
@@ -160,7 +162,11 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
     try:
         await status_msg.edit_text("⬇️ در حال دانلود...")
 
-        result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
+        if is_youtube:
+            result = await download_youtube(url, actual_quality, audio_only)
+        else:
+            result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
+
         if not result:
             raise Exception("دانلود ناموفق بود.")
 
@@ -230,6 +236,9 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
             completed_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
         )
 
+    except YtdlError as e:
+        await status_msg.edit_text(fa.error.format(msg=e.message))
+        download_model.update_download_status(download_doc["_id"], "failed", error_message=str(e))
     except CobaltError as e:
         error_msg = cobalt_error_to_message_simple(e.code)
         await status_msg.edit_text(fa.error.format(msg=error_msg))
