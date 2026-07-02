@@ -104,6 +104,6 @@ def _convert_to_cobalt_format(cookies_txt: str) -> dict:
                 youtube_cookies.append(f"{name}={value}")
 
     if youtube_cookies:
-        cookies["youtube"] = ["; ".join(youtube_cookies)]
+        cookies["youtube"] = youtube_cookies
 
     return cookies

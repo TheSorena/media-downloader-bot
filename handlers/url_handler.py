@@ -209,7 +209,7 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
         except Exception as send_error:
             if "file is too big" in str(send_error).lower() or "request EntityTooLarge" in str(send_error):
                 await status_msg.edit_text(
-                    fa.error("حجم فایل بیشتر از حد مجاز تلگرام است. اشتراک پرمیوم بخرید.")
+                    fa.error.format(msg="حجم فایل بیشتر از حد مجاز تلگرام است. اشتراک پرمیوم بخرید.")
                 )
                 cleanup_file(filepath)
                 cleanup_thumbnail(thumb_path)
@@ -232,7 +232,7 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
 
     except CobaltError as e:
         error_msg = cobalt_error_to_message_simple(e.code)
-        await status_msg.edit_text(fa.error(error_msg))
+        await status_msg.edit_text(fa.error.format(msg=error_msg))
         download_model.update_download_status(download_doc["_id"], "failed", error_message=str(e))
     except Exception as e:
         error_msg = str(e)
@@ -240,7 +240,7 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
             error_msg = "زمان پردازش تمام شد."
         elif "private" in error_msg.lower():
             error_msg = "این ویدیو خصوصیه."
-        await status_msg.edit_text(fa.error(error_msg))
+        await status_msg.edit_text(fa.error.format(msg=error_msg))
         download_model.update_download_status(download_doc["_id"], "failed", error_message=str(e))
 
 
@@ -257,5 +257,7 @@ def cobalt_error_to_message_simple(code: str) -> str:
         "empty": "❌ محتوایی برای دانلود وجود ندارد.",
         "no_matching_format": "🚫 فرمت دانلود موجود نیست.",
         "unsupported": "🚫 این پلتفرم پشتیبانی نمی‌شود.",
+        "error.api.youtube.login": "🔑 یوتیوب نیاز به ورود دارد. لطفاً فایل cookies آپلود کنید.",
+        "error.api.youtube.login_required": "🔑 یوتیوب نیاز به ورود دارد. لطفاً فایل cookies آپلود کنید.",
     }
     return messages.get(code, f"خطا در دانلود: {code}")

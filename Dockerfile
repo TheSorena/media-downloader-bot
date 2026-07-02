@@ -27,6 +27,7 @@ ENV NODE_ENV=production
 ENV API_URL=http://localhost:9000/
 ENV API_PORT=9000
 ENV BOT_MODE=polling
+ENV COOKIE_PATH=/app/cookies/cobalt-cookies.json
 
 EXPOSE 9000
 
