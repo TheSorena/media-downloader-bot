@@ -166,7 +166,7 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
             try:
                 result = await download_youtube(url, actual_quality, audio_only)
             except YtdlError as e:
-                if "ورود" in e.message or "login" in e.message.lower():
+                if any(w in e.message for w in ["ورود", "login", "sign in", "confirm", "bot"]):
                     await status_msg.edit_text("🔄 در حال تلاش با روش جایگزین...")
                     result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
                 else:
