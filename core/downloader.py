@@ -29,7 +29,7 @@ async def download_via_cobalt(url: str, video_quality: str = "720", audio_only: 
         async with session.get(
             download_url,
             headers=headers,
-            timeout=aiohttp.ClientTimeout(total=300),
+            timeout=aiohttp.ClientTimeout(total=900),
         ) as resp:
             if not resp.ok:
                 raise Exception(f"Download failed: HTTP {resp.status}")

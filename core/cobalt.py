@@ -42,7 +42,7 @@ async def cobalt_request_url(
             COBALT_API_URL,
             json=payload,
             headers=headers,
-            timeout=aiohttp.ClientTimeout(total=60),
+            timeout=aiohttp.ClientTimeout(total=120),
         ) as resp:
             if not resp.ok:
                 text = await resp.text()
