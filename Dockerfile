@@ -21,12 +21,13 @@ RUN pip3 install --break-system-packages -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /tmp/downloads /app/cookies
+RUN mkdir -p /tmp/downloads
 
 ENV NODE_ENV=production
 ENV API_URL=http://localhost:9000/
 ENV API_PORT=9000
 ENV BOT_MODE=polling
+ENV COOKIE_PATH=
 
 EXPOSE 9000
 
