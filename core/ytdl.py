@@ -10,7 +10,7 @@ class YtdlError(Exception):
         super().__init__(f"ytdl: {message}")
 
 
-def _get_base_opts() -> dict:
+def _base_opts() -> dict:
     opts = {
         "quiet": True,
         "no_warnings": True,
@@ -19,11 +19,23 @@ def _get_base_opts() -> dict:
         "extractor_retries": 3,
         "file_access_retries": 3,
         "ignoreerrors": False,
-        "user_agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+        "user_agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+        "http_headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+        },
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "tv"],
-                "skip": ["webpage"],
+                "player_client": ["android_embedded", "web_embedded", "android"],
+                "include_dash_manifest": True,
             },
         },
     }
@@ -42,7 +54,7 @@ async def download_youtube(
 
     if audio_only:
         outtmpl = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-        ydl_opts = _get_base_opts()
+        ydl_opts = _base_opts()
         ydl_opts.update({
             "format": "bestaudio/best",
             "outtmpl": outtmpl,
@@ -52,7 +64,6 @@ async def download_youtube(
                 "preferredquality": "192",
             }],
         })
-        ext = "mp3"
     else:
         quality_map = {
             "4320": "bestvideo[height<=4320]+bestaudio/best[height<=4320]",
@@ -67,13 +78,12 @@ async def download_youtube(
         fmt = quality_map.get(clean_quality, quality_map["720"])
 
         outtmpl = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-        ydl_opts = _get_base_opts()
+        ydl_opts = _base_opts()
         ydl_opts.update({
             "format": fmt,
             "outtmpl": outtmpl,
             "merge_output_format": "mp4",
         })
-        ext = "mp4"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -98,7 +108,9 @@ async def download_youtube(
 
     except yt_dlp.utils.DownloadError as e:
         error_msg = str(e).lower()
-        if "private" in error_msg:
+        if "sign in" in error_msg or "login" in error_msg:
+            raise YtdlError("🔑 یوتیوب نیاز به ورود دارد.")
+        elif "private" in error_msg:
             raise YtdlError("🔒 این ویدیو خصوصیه.")
         elif "unavailable" in error_msg or "not found" in error_msg:
             raise YtdlError("❌ ویدیو یافت نشد.")
@@ -114,7 +126,7 @@ async def download_youtube(
 
 
 def get_youtube_info(url: str) -> dict:
-    ydl_opts = {
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
@@ -122,16 +134,16 @@ def get_youtube_info(url: str) -> dict:
         "socket_timeout": 30,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "tv"],
-                "skip": ["webpage"],
+                "player_client": ["android_embedded", "web_embedded", "android"],
+                "include_dash_manifest": True,
             },
         },
     }
     if COOKIE_FILE and os.path.exists(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
+        opts["cookiefile"] = COOKIE_FILE
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if not info:
                 return {}
