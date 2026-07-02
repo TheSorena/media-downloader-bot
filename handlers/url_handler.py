@@ -8,7 +8,8 @@ from core.downloader import (
     download_via_cobalt, probe_video, generate_thumbnail,
     cleanup_file, cleanup_thumbnail,
 )
-from core.ytdl import download_youtube, YtdlError
+from core.piped import download_youtube as piped_download, PipedError
+from core.ytdl import download_youtube as ytdlp_download, YtdlError
 from utils.formatter import format_bytes, format_duration, get_day_key, check_quota
 from utils.rate_limiter import rate_limiter
 from utils.cleanup import cleanup_temp_directory
@@ -164,13 +165,12 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
 
         if is_youtube:
             try:
-                result = await download_youtube(url, actual_quality, audio_only)
-            except YtdlError as e:
-                if any(w in e.message for w in ["ورود", "login", "sign in", "confirm", "bot"]):
-                    await status_msg.edit_text("🔄 در حال تلاش با روش جایگزین...")
+                result = await piped_download(url, actual_quality, audio_only)
+            except (PipedError, Exception):
+                try:
+                    result = await ytdlp_download(url, actual_quality, audio_only)
+                except YtdlError:
                     result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
-                else:
-                    raise
         else:
             result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
 
