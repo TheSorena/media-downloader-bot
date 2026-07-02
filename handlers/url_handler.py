@@ -10,6 +10,9 @@ from core.downloader import (
 )
 from core.piped import download_youtube as piped_download, PipedError
 from core.ytdl import download_youtube as ytdlp_download, YtdlError
+from core.cobalt import CobaltError
+from core.downloader import download_via_cobalt, probe_video, generate_thumbnail, cleanup_file, cleanup_thumbnail
+from core.downloader import download_via_cobalt as _local_cobalt
 from utils.formatter import format_bytes, format_duration, get_day_key, check_quota
 from utils.rate_limiter import rate_limiter
 from utils.cleanup import cleanup_temp_directory
