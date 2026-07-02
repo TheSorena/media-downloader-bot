@@ -10,6 +10,28 @@ class YtdlError(Exception):
         super().__init__(f"ytdl: {message}")
 
 
+def _get_base_opts() -> dict:
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "socket_timeout": 30,
+        "extractor_retries": 3,
+        "file_access_retries": 3,
+        "ignoreerrors": False,
+        "user_agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "tv"],
+                "skip": ["webpage"],
+            },
+        },
+    }
+    if COOKIE_FILE and os.path.exists(COOKIE_FILE):
+        opts["cookiefile"] = COOKIE_FILE
+    return opts
+
+
 async def download_youtube(
     url: str,
     video_quality: str = "720",
@@ -20,7 +42,8 @@ async def download_youtube(
 
     if audio_only:
         outtmpl = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-        ydl_opts = {
+        ydl_opts = _get_base_opts()
+        ydl_opts.update({
             "format": "bestaudio/best",
             "outtmpl": outtmpl,
             "postprocessors": [{
@@ -28,11 +51,7 @@ async def download_youtube(
                 "preferredcodec": "mp3",
                 "preferredquality": "192",
             }],
-            "quiet": True,
-            "no_warnings": True,
-            "noplaylist": True,
-            "socket_timeout": 30,
-        }
+        })
         ext = "mp3"
     else:
         quality_map = {
@@ -48,19 +67,13 @@ async def download_youtube(
         fmt = quality_map.get(clean_quality, quality_map["720"])
 
         outtmpl = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-        ydl_opts = {
+        ydl_opts = _get_base_opts()
+        ydl_opts.update({
             "format": fmt,
             "outtmpl": outtmpl,
             "merge_output_format": "mp4",
-            "quiet": True,
-            "no_warnings": True,
-            "noplaylist": True,
-            "socket_timeout": 30,
-        }
+        })
         ext = "mp4"
-
-    if COOKIE_FILE and os.path.exists(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -85,13 +98,11 @@ async def download_youtube(
 
     except yt_dlp.utils.DownloadError as e:
         error_msg = str(e).lower()
-        if "login" in error_msg or "sign in" in error_msg:
-            raise YtdlError("🔑 یوتیوب نیاز به ورود دارد. لطفاً فایل cookies آپلود کنید.")
-        elif "private" in error_msg:
+        if "private" in error_msg:
             raise YtdlError("🔒 این ویدیو خصوصیه.")
         elif "unavailable" in error_msg or "not found" in error_msg:
             raise YtdlError("❌ ویدیو یافت نشد.")
-        elif "geo" in error_msg:
+        elif "geo" in error_msg or "block" in error_msg:
             raise YtdlError("🌍 این محتوا در منطقه شما در دسترس نیست.")
         elif "timeout" in error_msg:
             raise YtdlError("⏳ زمان پردازش تمام شد.")
@@ -108,8 +119,14 @@ def get_youtube_info(url: str) -> dict:
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
+        "socket_timeout": 30,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "tv"],
+                "skip": ["webpage"],
+            },
+        },
     }
-
     if COOKIE_FILE and os.path.exists(COOKIE_FILE):
         ydl_opts["cookiefile"] = COOKIE_FILE
 
