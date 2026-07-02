@@ -19,23 +19,12 @@ def _base_opts() -> dict:
         "extractor_retries": 3,
         "file_access_retries": 3,
         "ignoreerrors": False,
-        "user_agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
-        "http_headers": {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate, br",
-            "DNT": "1",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-        },
+        "force_ipv4": True,
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "extractor_args": {
             "youtube": {
-                "player_client": ["android_embedded", "web_embedded", "android"],
-                "include_dash_manifest": True,
+                "player_client": ["tv", "web_embedded"],
+                "player_skip": ["webpage"],
             },
         },
     }
@@ -66,13 +55,13 @@ async def download_youtube(
         })
     else:
         quality_map = {
-            "4320": "bestvideo[height<=4320]+bestaudio/best[height<=4320]",
-            "2160": "bestvideo[height<=2160]+bestaudio/best[height<=2160]",
-            "1440": "bestvideo[height<=1440]+bestaudio/best[height<=1440]",
-            "1080": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
-            "720": "bestvideo[height<=720]+bestaudio/best[height<=720]",
-            "480": "bestvideo[height<=480]+bestaudio/best[height<=480]",
-            "360": "bestvideo[height<=360]+bestaudio/best[height<=360]",
+            "4320": "bestvideo*+bestaudio/best[height<=4320]",
+            "2160": "bestvideo*+bestaudio/best[height<=2160]",
+            "1440": "bestvideo*+bestaudio/best[height<=1440]",
+            "1080": "bestvideo*+bestaudio/best[height<=1080]",
+            "720": "bestvideo*+bestaudio/best[height<=720]",
+            "480": "bestvideo*+bestaudio/best[height<=480]",
+            "360": "bestvideo*+bestaudio/best[height<=360]",
         }
         clean_quality = video_quality.replace("p", "")
         fmt = quality_map.get(clean_quality, quality_map["720"])
@@ -132,10 +121,11 @@ def get_youtube_info(url: str) -> dict:
         "skip_download": True,
         "noplaylist": True,
         "socket_timeout": 30,
+        "force_ipv4": True,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android_embedded", "web_embedded", "android"],
-                "include_dash_manifest": True,
+                "player_client": ["tv", "web_embedded"],
+                "player_skip": ["webpage"],
             },
         },
     }

@@ -168,11 +168,11 @@ async def _start_download(message: Message, user: dict, url: str, platform: str,
 
         if is_youtube:
             try:
-                result = await piped_download(url, actual_quality, audio_only)
-            except (PipedError, Exception):
+                result = await ytdlp_download(url, actual_quality, audio_only)
+            except YtdlError:
                 try:
-                    result = await ytdlp_download(url, actual_quality, audio_only)
-                except YtdlError:
+                    result = await piped_download(url, actual_quality, audio_only)
+                except (PipedError, Exception):
                     result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
         else:
             result = await download_via_cobalt(url, actual_quality if not audio_only else "720", audio_only)
